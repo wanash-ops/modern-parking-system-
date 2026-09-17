@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MMU Smart Parking System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto space-y-8">
+    <header class="text-center">
+      <h1 class="text-3xl font-bold text-amber-400">MMU Automated Parking System</h1>
+      <p class="text-slate-400 mt-1">Real-Time Visual Display & Dynamic Barrier Control</p>
+    </header>
+
+    <!-- Visual Parking Grid -->
+    <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+      <h2 class="text-xl font-semibold mb-4 text-slate-200">Live Parking Slot Availability (Visual Display)</h2>
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-4">
+        {% for slot in slots %}
+          <div class="p-4 rounded-lg border-2 text-center transition-all {% if slot['is_occupied'] %} border-red-500 bg-red-950/40 text-red-300 {% else %} border-emerald-500 bg-emerald-950/40 text-emerald-300 {% endif %}">
+            <div class="text-lg font-extrabold">{{ slot['slot_number'] }}</div>
+            <div class="text-xs uppercase font-semibold mt-1">
+              {% if slot['is_occupied'] %} Occupied ({{ slot['vehicle_plate'] }}) {% else %} Available {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Entry and Exit Control Modules -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Entry Gate -->
+      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+        <h3 class="text-lg font-bold text-emerald-400 mb-3">Entrance Gate (Arrival)</h3>
+        <div class="space-y-4">
+          <input id="entryPlate" type="text" placeholder="e.g. KDA 123X" class="w-full px-4 py-2 rounded bg-slate-900 border border-slate-700 focus:outline-none focus:border-emerald-500 uppercase" />
+          <button onclick="handleEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded transition">Record Arrival & Open Barrier</button>
+        </div>
+        <p id="entryMsg" class="mt-3 text-sm font-medium"></p>
+      </section>
+
+      <!-- Exit Gate & Billing -->
+      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+        <h3 class="text-lg font-bold text-amber-400 mb-3">Exit Gate (Checkout & Payment)</h3>
+        <div class="space-y-4">
+          <input id="exitPlate" type="text" placeholder="e.g. KDA 123X" class="w-full px-4 py-2 rounded bg-slate-900 border border-slate-700 focus:outline-none focus:border-amber-500 uppercase" />
+          <button onclick="calculateFee()" class="w-full bg-amber-600 hover:bg-amber-500 font-bold py-2 rounded transition">Calculate Exit Fee</button>
+        </div>
+        <div id="billSection" class="hidden mt-4 p-4 bg-slate-900 rounded border border-slate-700 space-y-2">
+          <p id="billTime" class="text-sm text-slate-300"></p>
+          <p id="billAmount" class="text-lg font-bold text-emerald-400"></p>
+          <button onclick="payAndExit()" class="w-full bg-green-600 hover:bg-green-500 font-bold py-2 rounded">Pay & Open Exit Barrier</button>
+        </div>
+        <p id="exitMsg" class="mt-3 text-sm font-medium"></p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    async function handleEntry() {
+      const plate = document.getElementById("entryPlate").value;
+      const res = await fetch("/api/entry", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({plate})
+      });
+      const data = await res.json();
+      const msg = document.getElementById("entryMsg");
+      msg.textContent = data.message;
+      msg.className = data.success ? "mt-3 text-sm font-medium text-emerald-400" : "mt-3 text-sm font-medium text-red-400";
+      if(data.success) setTimeout(() => location.reload(), 1200);
+    }
+
+    let currentExitData = null;
+    async function calculateFee() {
+      const plate = document.getElementById("exitPlate").value;
+      const res = await fetch("/api/calculate_exit", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({plate})
+      });
+      const data = await res.json();
+      const msg = document.getElementById("exitMsg");
+      if(!data.success) {
+        msg.textContent = data.message;
+        msg.className = "mt-3 text-sm font-medium text-red-400";
+        return;
+      }
+      currentExitData = data;
+      document.getElementById("billSection").classList.remove("hidden");
+      document.getElementById("billTime").textContent = `Duration: ${data.duration_mins} mins | Slot: ${data.slot}`;
+      document.getElementById("billAmount").textContent = `Total Fee: Kshs. ${data.amount}`;
+    }
+
+    async function payAndExit() {
+      if(!currentExitData) return;
+      const res = await fetch("/api/confirm_exit", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({plate: currentExitData.plate, amount: currentExitData.amount})
+      });
+      const data = await res.json();
+      const msg = document.getElementById("exitMsg");
+      msg.textContent = data.message;
+      msg.className = "mt-3 text-sm font-medium text-emerald-400";
+      setTimeout(() => location.reload(), 1500);
+    }
+  </script>
+</body>
+</html>
