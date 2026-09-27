@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
+import os
 from datetime import datetime
 from parking_logic import SlotAllocator
 
@@ -210,4 +211,5 @@ def update_rate():
     return jsonify({"success": True, "message": "Pricing tier updated successfully."})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
