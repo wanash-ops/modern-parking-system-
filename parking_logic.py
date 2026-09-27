@@ -1,29 +1,51 @@
+import sqlite3
+
+DB_NAME = "parking_system.db"
+
 class SlotAllocator:
     """
     DSA Logic for MMU Parking System:
     - Array/Grid representation for slots
-    - Linear Search / Hash verification for slot availability
+    - Dynamic tier rate lookup from database (Management configurable)
+    - Automated VAT computation (16% statutory rate)
     """
     def __init__(self, total_slots=12):
         self.total_slots = total_slots
 
     @staticmethod
-    def calculate_fee(minutes: float) -> int:
+    def calculate_fee_and_vat(minutes: float) -> dict:
         """
-        MMU Tier Pricing:
-        - Up to 30 mins: Kshs. 0
-        - Up to 2 hours (120 mins): Kshs. 50
-        - Up to 4 hours (240 mins): Kshs. 100
-        - Up to 6 hours (360 mins): Kshs. 300
-        - Over 6 hours: Kshs. 500
+        Dynamically fetches pricing tiers from SQLite database.
+        Calculates:
+          - Gross Amount Payable
+          - 16% VAT portion for compliance and auditing
+          - Net Parking Revenue
         """
-        if minutes <= 30:
-            return 0
-        elif minutes <= 120:
-            return 50
-        elif minutes <= 240:
-            return 100
-        elif minutes <= 360:
-            return 300
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        
+        # Pull sorted active rate tiers
+        cursor.execute("SELECT max_minutes, rate FROM pricing_tiers ORDER BY max_minutes ASC")
+        tiers = cursor.fetchall()
+        conn.close()
+
+        # Find applicable tier using linear search
+        gross_rate = 500.0  # Fallback default if beyond max tier
+        for max_mins, rate in tiers:
+            if minutes <= max_mins:
+                gross_rate = float(rate)
+                break
+
+        # Compute statutory 16% VAT breakdown: Net = Gross / 1.16, VAT = Gross - Net
+        if gross_rate > 0:
+            net_amount = round(gross_rate / 1.16, 2)
+            vat_amount = round(gross_rate - net_amount, 2)
         else:
-            return 500
+            net_amount = 0.0
+            vat_amount = 0.0
+
+        return {
+            "gross_amount": gross_rate,
+            "net_amount": net_amount,
+            "vat_amount": vat_amount
+        }

@@ -2,63 +2,221 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MMU Smart Parking System</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-6">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8">
   <div class="max-w-6xl mx-auto space-y-8">
-    <header class="text-center">
-      <h1 class="text-3xl font-bold text-amber-400">MMU Automated Parking System</h1>
-      <p class="text-slate-400 mt-1">Real-Time Visual Display & Dynamic Barrier Control</p>
+    
+    <!-- Top Header -->
+    <header class="text-center space-y-1">
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-amber-400 tracking-tight">MMU Automated Parking Management</h1>
+      <p class="text-slate-400 text-sm">Real-Time Visual Display, Automated Barrier Control & Financial Audit</p>
     </header>
 
-    <!-- Visual Parking Grid -->
-    <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-      <h2 class="text-xl font-semibold mb-4 text-slate-200">Live Parking Slot Availability (Visual Display)</h2>
-      <div class="grid grid-cols-3 sm:grid-cols-6 gap-4">
+    <!-- Entrance Live Display Board (Objective 1.2) -->
+    <section class="grid grid-cols-3 gap-4 bg-slate-900 border border-slate-800 p-4 rounded-xl text-center shadow-lg">
+      <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700">
+        <span class="text-xs uppercase text-slate-400 font-semibold tracking-wider">Total Bays</span>
+        <div class="text-2xl font-black text-slate-200 mt-1">{{ total_slots }}</div>
+      </div>
+      <div class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/60">
+        <span class="text-xs uppercase text-emerald-400 font-semibold tracking-wider">Available</span>
+        <div class="text-2xl font-black text-emerald-400 mt-1">{{ available_slots }}</div>
+      </div>
+      <div class="bg-red-950/40 p-3 rounded-lg border border-red-800/60">
+        <span class="text-xs uppercase text-red-400 font-semibold tracking-wider">Occupied</span>
+        <div class="text-2xl font-black text-red-400 mt-1">{{ occupied_slots }}</div>
+      </div>
+    </section>
+
+    <!-- Real-Time Slot Grid Visualizer -->
+    <section class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-lg">
+      <h2 class="text-lg font-bold mb-4 text-slate-300">Live Parking Bay Map (A1 - B6)</h2>
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {% for slot in slots %}
-          <div class="p-4 rounded-lg border-2 text-center transition-all {% if slot['is_occupied'] %} border-red-500 bg-red-950/40 text-red-300 {% else %} border-emerald-500 bg-emerald-950/40 text-emerald-300 {% endif %}">
-            <div class="text-lg font-extrabold">{{ slot['slot_number'] }}</div>
-            <div class="text-xs uppercase font-semibold mt-1">
-              {% if slot['is_occupied'] %} Occupied ({{ slot['vehicle_plate'] }}) {% else %} Available {% endif %}
+          <div class="p-4 rounded-lg border-2 text-center transition-all duration-300 {% if slot['is_occupied'] %} border-red-500 bg-red-950/40 text-red-300 shadow-red-900/20 {% else %} border-emerald-500 bg-emerald-950/40 text-emerald-300 shadow-emerald-900/20 {% endif %}">
+            <div class="text-xl font-black">{{ slot['slot_number'] }}</div>
+            <div class="text-[11px] font-semibold uppercase mt-1 tracking-wide">
+              {% if slot['is_occupied'] %}
+                Occupied<br><span class="text-white font-bold">{{ slot['vehicle_plate'] }}</span>
+              {% else %}
+                Free
+              {% endif %}
             </div>
           </div>
         {% endfor %}
       </div>
     </section>
 
-    <!-- Entry and Exit Control Modules -->
+    <!-- Entry and Exit Barrier Stations -->
     <div class="grid md:grid-cols-2 gap-6">
+      
       <!-- Entry Gate -->
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h3 class="text-lg font-bold text-emerald-400 mb-3">Entrance Gate (Arrival)</h3>
-        <div class="space-y-4">
-          <input id="entryPlate" type="text" placeholder="e.g. KDA 123X" class="w-full px-4 py-2 rounded bg-slate-900 border border-slate-700 focus:outline-none focus:border-emerald-500 uppercase" />
-          <button onclick="handleEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded transition">Record Arrival & Open Barrier</button>
+      <section class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-emerald-400">Entry Lane Station</h3>
+          <span class="px-2 py-0.5 text-xs bg-emerald-900/60 text-emerald-300 rounded border border-emerald-700 font-mono">BARRIER: LOCKED</span>
         </div>
-        <p id="entryMsg" class="mt-3 text-sm font-medium"></p>
+        <input id="entryPlate" type="text" placeholder="ENTER NUMBER PLATE (e.g. KDA 123X)" class="w-full px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 uppercase tracking-widest focus:outline-none focus:border-emerald-500" />
+        <button onclick="handleEntry()" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold py-2.5 rounded-lg transition active:scale-[0.99]">
+          Record Arrival & Lift Entry Barrier
+        </button>
+        <p id="entryMsg" class="text-sm font-semibold"></p>
       </section>
 
-      <!-- Exit Gate & Billing -->
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h3 class="text-lg font-bold text-amber-400 mb-3">Exit Gate (Checkout & Payment)</h3>
-        <div class="space-y-4">
-          <input id="exitPlate" type="text" placeholder="e.g. KDA 123X" class="w-full px-4 py-2 rounded bg-slate-900 border border-slate-700 focus:outline-none focus:border-amber-500 uppercase" />
-          <button onclick="calculateFee()" class="w-full bg-amber-600 hover:bg-amber-500 font-bold py-2 rounded transition">Calculate Exit Fee</button>
+      <!-- Exit Gate & Billing Checkout -->
+      <section class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-amber-400">Exit Lane Checkout</h3>
+          <span class="px-2 py-0.5 text-xs bg-amber-900/60 text-amber-300 rounded border border-amber-700 font-mono">BARRIER: LOCKED</span>
         </div>
-        <div id="billSection" class="hidden mt-4 p-4 bg-slate-900 rounded border border-slate-700 space-y-2">
-          <p id="billTime" class="text-sm text-slate-300"></p>
-          <p id="billAmount" class="text-lg font-bold text-emerald-400"></p>
-          <button onclick="payAndExit()" class="w-full bg-green-600 hover:bg-green-500 font-bold py-2 rounded">Pay & Open Exit Barrier</button>
+        <div class="flex gap-2">
+          <input id="exitPlate" type="text" placeholder="ENTER PLATE (e.g. KDA 123X)" class="flex-1 px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 uppercase tracking-widest focus:outline-none focus:border-amber-500" />
+          <button onclick="calculateFee()" class="bg-amber-600 hover:bg-amber-500 font-bold px-4 rounded-lg transition">Compute</button>
         </div>
-        <p id="exitMsg" class="mt-3 text-sm font-medium"></p>
+        
+        <!-- Billing Details & Payment Select (Hidden until computed) -->
+        <div id="billSection" class="hidden space-y-4 p-4 bg-slate-950 rounded-lg border border-slate-800">
+          <div class="text-xs space-y-1 text-slate-400 border-b border-slate-800 pb-2">
+            <div>Bay: <span id="billSlot" class="font-bold text-slate-200"></span> | Duration: <span id="billDuration" class="font-bold text-slate-200"></span> mins</div>
+            <div>Net Parking Fee: <span id="billNet" class="font-semibold text-slate-300"></span></div>
+            <div>Statutory 16% VAT: <span id="billVat" class="font-semibold text-slate-300"></span></div>
+          </div>
+          <div class="text-xl font-extrabold text-amber-400" id="billGross"></div>
+
+          <!-- Payment Method Options (Objective 1.2) -->
+          <div>
+            <label class="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">Select Payment Method</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer border border-slate-700 rounded-lg p-2 text-center hover:border-emerald-500 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
+                <input type="radio" name="payMethod" value="M-PESA" checked class="hidden" />
+                <span class="text-xs font-bold block text-emerald-400">M-PESA</span>
+              </label>
+              <label class="cursor-pointer border border-slate-700 rounded-lg p-2 text-center hover:border-sky-500 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-950/30">
+                <input type="radio" name="payMethod" value="CARD" class="hidden" />
+                <span class="text-xs font-bold block text-sky-400">CARD</span>
+              </label>
+              <label class="cursor-pointer border border-slate-700 rounded-lg p-2 text-center hover:border-amber-500 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/30">
+                <input type="radio" name="payMethod" value="CASH" class="hidden" />
+                <span class="text-xs font-bold block text-amber-400">CASH</span>
+              </label>
+            </div>
+          </div>
+
+          <button onclick="payAndExit()" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold py-2.5 rounded-lg transition">
+            Confirm Payment & Open Exit Barrier
+          </button>
+        </div>
+
+        <p id="exitMsg" class="text-sm font-semibold"></p>
       </section>
+
     </div>
+
+    <!-- Management & Financial Audit Section -->
+    <section class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-slate-200">Management Rate Config & Financial Audit (16% VAT)</h3>
+        <span class="text-xs text-slate-400">Auditable System Record</span>
+      </div>
+
+      <!-- Financial Totals -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <div class="text-xs text-slate-400">Exited Vehicles</div>
+          <div class="text-lg font-bold text-slate-200">{{ finance['total_transactions'] }}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <div class="text-xs text-slate-400">Net Revenue</div>
+          <div class="text-lg font-bold text-slate-200">Kshs. {{ "%.2f"|format(finance['total_net']) }}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <div class="text-xs text-slate-400">16% VAT Account</div>
+          <div class="text-lg font-bold text-emerald-400">Kshs. {{ "%.2f"|format(finance['total_vat']) }}</div>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <div class="text-xs text-slate-400">Total Gross Cash</div>
+          <div class="text-lg font-bold text-amber-400">Kshs. {{ "%.2f"|format(finance['total_gross']) }}</div>
+        </div>
+      </div>
+
+      <!-- Configurable Tiers Table (Objective: change rates without software changes) -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Live Tier Configuration</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left text-slate-300 border border-slate-800">
+            <thead class="bg-slate-950 uppercase text-slate-400">
+              <tr>
+                <th class="p-2 border-b border-slate-800">Tier Description</th>
+                <th class="p-2 border-b border-slate-800">Max Minutes</th>
+                <th class="p-2 border-b border-slate-800">Current Rate (Kshs)</th>
+                <th class="p-2 border-b border-slate-800 text-right">Update Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tier in tiers %}
+                <tr class="border-b border-slate-800/60 hover:bg-slate-800/40">
+                  <td class="p-2 font-medium">{{ tier['description'] }}</td>
+                  <td class="p-2 font-mono">{{ tier['max_minutes'] }}</td>
+                  <td class="p-2 font-bold text-amber-400">Kshs. {{ tier['rate'] }}</td>
+                  <td class="p-2 text-right">
+                    <button onclick="updateRatePrompt({{ tier['tier_id'] }}, '{{ tier['description'] }}', {{ tier['rate'] }})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-600 transition">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Transaction Audit Trail -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Recent Payment Trail (Auditable Logs)</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left text-slate-300 border border-slate-800">
+            <thead class="bg-slate-950 uppercase text-slate-400">
+              <tr>
+                <th class="p-2 border-b border-slate-800">Plate</th>
+                <th class="p-2 border-b border-slate-800">Bay</th>
+                <th class="p-2 border-b border-slate-800">Exit Time</th>
+                <th class="p-2 border-b border-slate-800">Method</th>
+                <th class="p-2 border-b border-slate-800">Net</th>
+                <th class="p-2 border-b border-slate-800">VAT (16%)</th>
+                <th class="p-2 border-b border-slate-800">Total Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transactions %}
+                <tr class="border-b border-slate-800/60">
+                  <td class="p-2 font-bold text-white">{{ t['vehicle_plate'] }}</td>
+                  <td class="p-2 font-mono">{{ t['slot_number'] }}</td>
+                  <td class="p-2 text-slate-400">{{ t['exit_time'] }}</td>
+                  <td class="p-2 font-semibold text-emerald-400">{{ t['payment_method'] }}</td>
+                  <td class="p-2">Kshs. {{ "%.2f"|format(t['net_amount']) }}</td>
+                  <td class="p-2">Kshs. {{ "%.2f"|format(t['vat_amount']) }}</td>
+                  <td class="p-2 font-bold text-amber-400">Kshs. {{ "%.2f"|format(t['amount_paid']) }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="7" class="p-4 text-center text-slate-500">No payment records yet. Park and exit a vehicle to generate audit logs.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
   </div>
 
   <script>
+    // Entry logic
     async function handleEntry() {
-      const plate = document.getElementById("entryPlate").value;
+      const plate = document.getElementById("entryPlate").value.trim();
       const res = await fetch("/api/entry", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -67,13 +225,14 @@
       const data = await res.json();
       const msg = document.getElementById("entryMsg");
       msg.textContent = data.message;
-      msg.className = data.success ? "mt-3 text-sm font-medium text-emerald-400" : "mt-3 text-sm font-medium text-red-400";
+      msg.className = data.success ? "text-sm font-semibold text-emerald-400" : "text-sm font-semibold text-red-400";
       if(data.success) setTimeout(() => location.reload(), 1200);
     }
 
-    let currentExitData = null;
+    // Exit Calculation
+    let currentExit = null;
     async function calculateFee() {
-      const plate = document.getElementById("exitPlate").value;
+      const plate = document.getElementById("exitPlate").value.trim();
       const res = await fetch("/api/calculate_exit", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -83,27 +242,54 @@
       const msg = document.getElementById("exitMsg");
       if(!data.success) {
         msg.textContent = data.message;
-        msg.className = "mt-3 text-sm font-medium text-red-400";
+        msg.className = "text-sm font-semibold text-red-400";
+        document.getElementById("billSection").classList.add("hidden");
         return;
       }
-      currentExitData = data;
+      currentExit = data;
       document.getElementById("billSection").classList.remove("hidden");
-      document.getElementById("billTime").textContent = `Duration: ${data.duration_mins} mins | Slot: ${data.slot}`;
-      document.getElementById("billAmount").textContent = `Total Fee: Kshs. ${data.amount}`;
+      document.getElementById("billSlot").textContent = data.slot;
+      document.getElementById("billDuration").textContent = data.duration_mins;
+      document.getElementById("billNet").textContent = `Kshs. ${data.net_amount.toFixed(2)}`;
+      document.getElementById("billVat").textContent = `Kshs. ${data.vat_amount.toFixed(2)}`;
+      document.getElementById("billGross").textContent = `Payable: Kshs. ${data.gross_amount.toFixed(2)}`;
+      msg.textContent = "";
     }
 
+    // Exit Payment confirmation
     async function payAndExit() {
-      if(!currentExitData) return;
+      if(!currentExit) return;
+      const method = document.querySelector('input[name="payMethod"]:checked').value;
       const res = await fetch("/api/confirm_exit", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({plate: currentExitData.plate, amount: currentExitData.amount})
+        body: JSON.stringify({
+          plate: currentExit.plate,
+          payment_method: method,
+          gross_amount: currentExit.gross_amount,
+          net_amount: currentExit.net_amount,
+          vat_amount: currentExit.vat_amount
+        })
       });
       const data = await res.json();
       const msg = document.getElementById("exitMsg");
       msg.textContent = data.message;
-      msg.className = "mt-3 text-sm font-medium text-emerald-400";
+      msg.className = "text-sm font-semibold text-emerald-400";
       setTimeout(() => location.reload(), 1500);
+    }
+
+    // Management rate update prompt
+    async function updateRatePrompt(tierId, desc, currentRate) {
+      const newRate = prompt(`Enter new rate for "${desc}" (Current: Kshs. ${currentRate}):`, currentRate);
+      if(newRate === null || isNaN(newRate) || newRate.trim() === "") return;
+      const res = await fetch("/api/update_rate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({tier_id: tierId, rate: parseFloat(newRate)})
+      });
+      const data = await res.json();
+      alert(data.message);
+      location.reload();
     }
   </script>
 </body>
